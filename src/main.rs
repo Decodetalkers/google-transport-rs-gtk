@@ -7,9 +7,8 @@ fn main() {
         Default::default(),
     );
 
-    application.connect_startup(|app| {
-        add_accelerators(app);
-    });
+    //直接用回调函数就得了
+    application.connect_startup(add_accelerators);
     application.connect_activate(build_ui);
 
     application.run();
@@ -111,7 +110,7 @@ fn add_actions(
     sub_sub_another.connect_activate(glib::clone!(@weak label => move |_, _| {
         label.set_text("sub sub another menu item clicked");
     }));
-    
+
     let sub_sub_another2 = gio::SimpleAction::new("sub_sub_another2", None);
     sub_sub_another2.connect_activate(glib::clone!(@weak label => move |_, _| {
         label.set_text("sub sub another2 menu item clicked");
