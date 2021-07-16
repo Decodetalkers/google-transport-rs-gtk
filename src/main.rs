@@ -1,6 +1,11 @@
+mod translate;
+use gtk::gdk_pixbuf::Pixbuf;
 use gtk::prelude::*;
-use gtk::AboutDialog;
-use gtk::{gio, glib};
+//use gtk::AboutDialog;
+//use gtk::{gio, glib};
+use gdk::ModifierType;
+use gtk::{cairo, gdk,glib,AccelFlags,AccelGroup};
+use gtk::ApplicationWindow;
 fn main() {
     let application = gtk::Application::new(
         Some("com.github.gtk-rs.examples.menu_bar_system"),
@@ -8,135 +13,120 @@ fn main() {
     );
 
     //直接用回调函数就得了
-    application.connect_startup(add_accelerators);
+    //application.connect_startup(add_accelerators);
     application.connect_activate(build_ui);
 
     application.run();
 }
 
-fn add_accelerators(application: &gtk::Application) {
-    application.set_accels_for_action("app.about", &["F1"]);
-    // `Primary` is a platform-agnostic accelerator modifier.
-    // On Windows and Linux, `Primary` maps to the `Ctrl` key,
-    // and on macOS it maps to the `command` key.
-    application.set_accels_for_action("app.quit", &["<Primary>Q"]);
-}
-
 fn build_ui(application: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(application);
+    //去除系统装饰
+    window.set_decorated(false);
+    window.set_keep_above(true);
+    //window.set_allocation(
+    //    &gtk::Rectangle{
+    //        x:0,
+    //        y:0,
+    //        width:50,
+    //        height:30,
 
+    //});
+    //设置是否可变大小
+    window.set_resizable(false);
+    window.set_position(gtk::WindowPosition::Center);
+    //检查当前目录是否有这个图片，如果有，就加载，没有，就不加载
+    if let Ok(icon) =  &Pixbuf::from_file("./youxie.jpeg") {
+        window.set_icon(Some(icon));
+    }
+    //window.set_icon(Some(&Pixbuf::from_file("./youxie.jpeg").unwrap()));
+    set_visual(&window, None);
+
+    window.connect_screen_changed(set_visual);
+    window.connect_draw(draw);
+    let accel_group = AccelGroup::new();
+    window.add_accel_group(&accel_group);
+    let (key, modifier) = gtk::accelerator_parse("<Primary>Q");
+
+    let v_box = gtk::Box::new(gtk::Orientation::Vertical, 10);
+    let label = gtk::Label::new(Some("Here is translate"));
+    
+    let translate = gtk::Button::with_mnemonic("Translate");
+
+    let button_box = gtk::ButtonBox::new(gtk::Orientation::Horizontal);
+
+    button_box.set_layout(gtk::ButtonBoxStyle::End);
+    button_box.pack_start(&translate,false,false,0);
+    v_box.pack_start(&label, true, true, 0);
+    v_box.pack_start(&button_box, true, true, 0);
+    window.add(&v_box);
     window.set_title("System menu bar");
     window.set_border_width(10);
     window.set_position(gtk::WindowPosition::Center);
     window.set_default_size(350, 70);
-
-    let v_box = gtk::Box::new(gtk::Orientation::Vertical, 10);
-    let label = gtk::Label::new(Some("Nothing happened yet"));
-    let switch = gtk::Switch::new();
-    // a is widget, b is expand c is fill,d is padding
-    v_box.pack_start(&label, false, false, 0);
-    v_box.pack_start(&switch, true, true, 0);
-
-    window.add(&v_box);
-
-    build_system_menu(application);
-
-    add_actions(application, &switch, &label, &window);
-
+    window.set_app_paintable(true);
+    add_actions(&window,&label,&translate,key,&accel_group,modifier);
     window.show_all();
 }
+//fn change_the_label(
+//    label : &gtk::Label,
+//){
+//        let clipbord = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
+//        clipbord.request_text(glib::clone!(@weak label => move |_,b|{
+//            match b{
+//                Some(word) =>{
+//                    label.set_text(word);
+//                    println!("{}",word);
+//                }
+//                None=>{
+//                    println!("None");
+//                }
+//            }
+//        }));
+//
+//}
+fn add_actions(
+    window: &gtk::ApplicationWindow,
+    label : &gtk::Label,
+    button: &gtk::Button,
+    key : u32,
+    accel_group :&AccelGroup,
+    accel_mods: ModifierType,
+) {
+    button.add_accelerator("clicked", accel_group, key, accel_mods, AccelFlags::VISIBLE);
+    button.connect_clicked(glib::clone!(@weak label => move |_| {
+        let clipbord = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
+        clipbord.request_text(move |_,b|{
+            match b{
+                Some(word) =>{
+                    let word = translate::translate(word.to_string());
+                    label.set_text(word.as_str());
 
-fn build_system_menu(application: &gtk::Application) {
-    let menu = gio::Menu::new();
-    let menu_bar = gio::Menu::new();
-    let more_menu = gio::Menu::new();
-    let switch_menu = gio::Menu::new();
-    let settings_menu = gio::Menu::new();
-    let submenu = gio::Menu::new();
-
-    // The first argument is the label of the menu item whereas the second is the action name. It'll
-    // makes more sense when you'll be reading the "add_actions" function.
-    menu.append(Some("Quit"), Some("app.quit"));
-
-    switch_menu.append(Some("Switch"), Some("app.switch"));
-    //加上了switch_menu
-    menu_bar.append_submenu(Some("_Switch"), &switch_menu);
-
-    settings_menu.append(Some("Sub another"), Some("app.sub_another"));
-    submenu.append(Some("Sub sub another"), Some("app.sub_sub_another"));
-    submenu.append(Some("Sub sub another2"), Some("app.sub_sub_another2"));
-    settings_menu.append_submenu(Some("Sub menu"), &submenu);
-    menu_bar.append_submenu(Some("_Another"), &settings_menu);
-
-    more_menu.append(Some("About"), Some("app.about"));
-    menu_bar.append_submenu(Some("?"), &more_menu);
-
-    //first is app menu, name is fixed, is Application / 应用程序
-    application.set_app_menu(Some(&menu));
-    application.set_menubar(Some(&menu_bar));
+                    println!("{}",word);
+                }
+                None=>{
+                    println!("None");
+                }
+            }
+        })
+    }));
+    window.is_resizable();
+    window.resize(100, 100);
+    window.set_resizable(false);
+}
+fn set_visual(window: &ApplicationWindow, _screen: Option<&gdk::Screen>) {
+    if let Some(screen) = window.screen() {
+        if let Some(ref visual) = screen.rgba_visual() {
+            window.set_visual(Some(visual)); // crucial for transparency
+        }
+    }
 }
 
-/// This function creates "actions" which connect on the declared actions from the menu items.
-fn add_actions(
-    application: &gtk::Application,
-    switch: &gtk::Switch,
-    label: &gtk::Label,
-    window: &gtk::ApplicationWindow,
-) {
-    // Thanks to this method, we can say that this item is actually a checkbox.
-    let switch_action = gio::SimpleAction::new_stateful("switch", None, &false.to_variant());
-    switch_action.connect_activate(glib::clone!(@weak switch => move |g, _| {
-        let mut is_active = false;
-        if let Some(g) = g.state() {
-            is_active = g.get().expect("couldn't get bool");
-            // We update the state of the toggle.
-            switch.set_active(!is_active);
-        }
-        // We need to change the toggle state ourselves. `gio` dark magic.
-        g.change_state(&(!is_active).to_variant());
-    }));
-
-    // The same goes the around way: if we update the switch state, we need to update the menu
-    // item's state.
-    switch.connect_active_notify(glib::clone!(@weak switch_action => move |s| {
-        switch_action.change_state(&s.is_active().to_variant());
-    }));
-
-    let sub_another = gio::SimpleAction::new("sub_another", None);
-    sub_another.connect_activate(glib::clone!(@weak label => move |_, _| {
-        label.set_text("sub another menu item clicked");
-    }));
-    let sub_sub_another = gio::SimpleAction::new("sub_sub_another", None);
-    sub_sub_another.connect_activate(glib::clone!(@weak label => move |_, _| {
-        label.set_text("sub sub another menu item clicked");
-    }));
-
-    let sub_sub_another2 = gio::SimpleAction::new("sub_sub_another2", None);
-    sub_sub_another2.connect_activate(glib::clone!(@weak label => move |_, _| {
-        label.set_text("sub sub another2 menu item clicked");
-    }));
-
-    let quit = gio::SimpleAction::new("quit", None);
-    quit.connect_activate(glib::clone!(@weak window => move |_, _| {
-        window.close();
-    }));
-
-    let about = gio::SimpleAction::new("about", None);
-    about.connect_activate(glib::clone!(@weak window => move |_, _| {
-        let p = AboutDialog::new();
-        p.set_website_label(Some("gtk-rs"));
-        p.set_website(Some("http://gtk-rs.org"));
-        p.set_authors(&["gtk-rs developers"]);
-        p.set_title("About!");
-        p.set_transient_for(Some(&window));
-        p.show_all();
-    }));
-
-    // We need to add all the actions to the application so they can be taken into account.
-    application.add_action(&about);
-    application.add_action(&quit);
-    application.add_action(&sub_another);
-    application.add_action(&sub_sub_another);
-    application.add_action(&sub_sub_another2);
-    application.add_action(&switch_action);
+fn draw(_window: &ApplicationWindow, ctx: &cairo::Context) -> Inhibit {
+    // crucial for transparency
+    // color set
+    ctx.set_source_rgba(0.2, 0.0, 1.0, 0.5);
+    ctx.set_operator(cairo::Operator::Screen);
+    ctx.paint().expect("Invalid cairo surface state");
+    Inhibit(false)
 }
