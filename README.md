@@ -5,3 +5,5 @@
 由rust-gtk制作而成
 
 谢谢这个项目，找了好久不知道怎么爬google
+
+https://github.com/ismesunny/google_translate_rust
