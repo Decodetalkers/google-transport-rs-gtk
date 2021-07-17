@@ -4,8 +4,8 @@ use gtk::prelude::*;
 //use gtk::AboutDialog;
 //use gtk::{gio, glib};
 use gdk::ModifierType;
-use gtk::{cairo, gdk,glib,AccelFlags,AccelGroup};
 use gtk::ApplicationWindow;
+use gtk::{cairo, gdk, glib, AccelFlags, AccelGroup};
 fn main() {
     let application = gtk::Application::new(
         Some("com.github.gtk-rs.examples.menu_bar_system"),
@@ -36,7 +36,7 @@ fn build_ui(application: &gtk::Application) {
     window.set_resizable(false);
     window.set_position(gtk::WindowPosition::Center);
     //检查当前目录是否有这个图片，如果有，就加载，没有，就不加载
-    if let Ok(icon) =  &Pixbuf::from_file("./youxie.jpeg") {
+    if let Ok(icon) = &Pixbuf::from_file("./youxie.jpeg") {
         window.set_icon(Some(icon));
     }
     //window.set_icon(Some(&Pixbuf::from_file("./youxie.jpeg").unwrap()));
@@ -50,13 +50,13 @@ fn build_ui(application: &gtk::Application) {
 
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 10);
     let label = gtk::Label::new(Some("Here is translate"));
-    
+
     let translate = gtk::Button::with_mnemonic("Translate");
 
     let button_box = gtk::ButtonBox::new(gtk::Orientation::Horizontal);
 
     button_box.set_layout(gtk::ButtonBoxStyle::End);
-    button_box.pack_start(&translate,false,false,0);
+    button_box.pack_start(&translate, false, false, 0);
     v_box.pack_start(&label, true, true, 0);
     v_box.pack_start(&button_box, true, true, 0);
     window.add(&v_box);
@@ -65,7 +65,7 @@ fn build_ui(application: &gtk::Application) {
     window.set_position(gtk::WindowPosition::Center);
     window.set_default_size(350, 70);
     window.set_app_paintable(true);
-    add_actions(&window,&label,&translate,key,&accel_group,modifier);
+    add_actions(&window, &label, &translate, key, &accel_group, modifier);
     window.show_all();
 }
 //fn change_the_label(
@@ -87,10 +87,10 @@ fn build_ui(application: &gtk::Application) {
 //}
 fn add_actions(
     window: &gtk::ApplicationWindow,
-    label : &gtk::Label,
+    label: &gtk::Label,
     button: &gtk::Button,
-    key : u32,
-    accel_group :&AccelGroup,
+    key: u32,
+    accel_group: &AccelGroup,
     accel_mods: ModifierType,
 ) {
     button.add_accelerator("clicked", accel_group, key, accel_mods, AccelFlags::VISIBLE);
