@@ -1,11 +1,15 @@
 mod translate;
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::prelude::*;
+use std::cell::RefCell;
 //use gtk::AboutDialog;
 //use gtk::{gio, glib};
 use gdk::ModifierType;
 use gtk::ApplicationWindow;
 use gtk::{cairo, gdk, glib, AccelFlags, AccelGroup};
+thread_local!(
+    static GLOBAL: RefCell<Option<gtk::Label>> = RefCell::new(None)
+);
 fn main() {
     let application = gtk::Application::new(
         Some("com.github.gtk-rs.examples.menu_bar_system"),
@@ -33,7 +37,7 @@ fn build_ui(application: &gtk::Application) {
 
     //});
     //设置是否可变大小
-    window.set_resizable(false);
+    //window.set_resizable(false);
     window.set_position(gtk::WindowPosition::Center);
     //检查当前目录是否有这个图片，如果有，就加载，没有，就不加载
     if let Ok(icon) = &Pixbuf::from_file("./youxie.jpeg") {
@@ -46,27 +50,61 @@ fn build_ui(application: &gtk::Application) {
     window.connect_draw(draw);
     let accel_group = AccelGroup::new();
     window.add_accel_group(&accel_group);
-    let (key, modifier) = gtk::accelerator_parse("<Primary>Q");
+    let (key, modifier) = gtk::accelerator_parse("<Primary>C");
 
     let v_box = gtk::Box::new(gtk::Orientation::Vertical, 10);
     let label = gtk::Label::new(Some("Here is translate"));
+    //设置最大字符传，过了就换行
+    label.set_max_width_chars(40);
+    label.set_line_wrap(true);
 
-    let translate = gtk::Button::with_mnemonic("Translate");
+    let copy = gtk::Button::with_mnemonic("Copy");
 
     let button_box = gtk::ButtonBox::new(gtk::Orientation::Horizontal);
 
     button_box.set_layout(gtk::ButtonBoxStyle::End);
-    button_box.pack_start(&translate, false, false, 0);
+    button_box.pack_start(&copy, false, false, 0);
+
     v_box.pack_start(&label, true, true, 0);
     v_box.pack_start(&button_box, true, true, 0);
     window.add(&v_box);
     window.set_title("System menu bar");
     window.set_border_width(10);
     window.set_position(gtk::WindowPosition::Center);
-    window.set_default_size(350, 70);
+    //window.set_default_size(550, 70);
+
     window.set_app_paintable(true);
-    add_actions(&window, &label, &translate, key, &accel_group, modifier);
+    add_actions(&window, &label, &copy, key, &accel_group, modifier);
+    window.set_resizable(false);
+    //设置位置在左上角
+    window.move_(0, 0);
     window.show_all();
+    GLOBAL.with(move |global| {
+        *global.borrow_mut() = Some(label);
+    });
+    //listen to the click board;
+    let clipboard = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
+    clipboard
+        .connect("owner-change", true, |_| {
+            let clipbord = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
+            clipbord.request_text(move |_, b| {
+                if let Some(word) = b {
+                    let word = translate::translate(word.to_string());
+
+                    GLOBAL.with(|global| {
+                        if let Some(ref labe) = *global.borrow() {
+                            labe.set_text(word.as_str());
+                        }
+                    });
+
+                    //println!("{}",word);
+                }
+            });
+
+            None
+        })
+        .map_err(|err| println!("{:?}", err))
+        .ok();
 }
 //fn change_the_label(
 //    label : &gtk::Label,
@@ -94,25 +132,20 @@ fn add_actions(
     accel_mods: ModifierType,
 ) {
     button.add_accelerator("clicked", accel_group, key, accel_mods, AccelFlags::VISIBLE);
-    button.connect_clicked(glib::clone!(@weak label => move |_| {
+    button.connect_clicked(glib::clone!(@weak label, @weak window => move |_| {
+        window.resize(500, 50);
         let clipbord = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
-        clipbord.request_text(move |_,b|{
-            match b{
-                Some(word) =>{
-                    let word = translate::translate(word.to_string());
-                    label.set_text(word.as_str());
-
-                    println!("{}",word);
-                }
-                None=>{
-                    println!("None");
-                }
-            }
-        })
+        clipbord.set_text(label.text().as_str());
+        //clipbord.request_text(move |_,b|{
+        //    if let Some(word) = b {
+        //        let word = translate::translate(word.to_string());
+        //        label.set_text(word.as_str());
+        //        //println!("{}",word);
+        //    }
+        //})
     }));
-    window.is_resizable();
-    window.resize(100, 100);
-    window.set_resizable(false);
+
+    //window.is_resizable();
 }
 fn set_visual(window: &ApplicationWindow, _screen: Option<&gdk::Screen>) {
     if let Some(screen) = window.screen() {
@@ -125,7 +158,7 @@ fn set_visual(window: &ApplicationWindow, _screen: Option<&gdk::Screen>) {
 fn draw(_window: &ApplicationWindow, ctx: &cairo::Context) -> Inhibit {
     // crucial for transparency
     // color set
-    ctx.set_source_rgba(0.2, 0.0, 1.0, 0.5);
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7);
     ctx.set_operator(cairo::Operator::Screen);
     ctx.paint().expect("Invalid cairo surface state");
     Inhibit(false)
