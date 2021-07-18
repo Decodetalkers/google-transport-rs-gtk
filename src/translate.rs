@@ -3,10 +3,10 @@ use serde_json::{self, Value};
 
 //use std::process::exit;
 
-pub fn translate(words: String) -> String {
+pub fn translate(source : &str, target: &str, words: String) -> String {
     let mut store_word = String::new();
-    let source = String::from("en"); //source language
-    let target = String::from("zh"); //target language
+    let source = String::from(source); //source language
+    let target = String::from(target); //target language
     let args: Vec<String> = vec![words];
 
     // generate_url(args, source, target);

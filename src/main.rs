@@ -7,8 +7,13 @@ use std::cell::RefCell;
 use gdk::ModifierType;
 use gtk::ApplicationWindow;
 use gtk::{cairo, gdk, glib, AccelFlags, AccelGroup};
+struct Ui{
+    label : gtk::Label,
+    combo_source : gtk::ComboBoxText,
+    combo_target : gtk::ComboBoxText,
+}
 thread_local!(
-    static GLOBAL: RefCell<Option<gtk::Label>> = RefCell::new(None)
+    static GLOBAL: RefCell<Option<Ui>> = RefCell::new(None)
 );
 fn main() {
     let application = gtk::Application::new(
@@ -59,10 +64,20 @@ fn build_ui(application: &gtk::Application) {
     label.set_line_wrap(true);
 
     let copy = gtk::Button::with_mnemonic("Copy");
-
+    let combo = gtk::ComboBoxText::new();
+    combo.append_text("zh");
+    combo.append_text("en");
+    combo.set_active(Some(1));
+    let combo2 = gtk::ComboBoxText::new();
+    combo2.append_text("zh");
+    combo2.append_text("en");
+    combo2.set_active(Some(0));
+    //println!("{:?}",combo2.active());
     let button_box = gtk::ButtonBox::new(gtk::Orientation::Horizontal);
 
     button_box.set_layout(gtk::ButtonBoxStyle::End);
+    button_box.pack_start(&combo, false, false, 0);
+    button_box.pack_start(&combo2, false, false, 0);
     button_box.pack_start(&copy, false, false, 0);
 
     v_box.pack_start(&label, true, true, 0);
@@ -80,7 +95,11 @@ fn build_ui(application: &gtk::Application) {
     window.move_(0, 0);
     window.show_all();
     GLOBAL.with(move |global| {
-        *global.borrow_mut() = Some(label);
+        *global.borrow_mut() = Some(Ui{
+            label,
+            combo_source:combo,
+            combo_target:combo2,
+        });
     });
     //listen to the click board;
     let clipboard = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
@@ -89,11 +108,40 @@ fn build_ui(application: &gtk::Application) {
             let clipbord = gtk::Clipboard::get(&gdk::SELECTION_CLIPBOARD);
             clipbord.request_text(move |_, b| {
                 if let Some(word) = b {
-                    let word = translate::translate(word.to_string());
+
 
                     GLOBAL.with(|global| {
-                        if let Some(ref labe) = *global.borrow() {
-                            labe.set_text(word.as_str());
+                        if let Some(ref ui) = *global.borrow() {
+                            let mut source2 : &str = "en";
+                            let mut target2 : &str = "zh";
+                            if let Some(source) = ui.combo_source.active(){
+                                if source == 0{
+                                    source2 = "zh";
+                                } else {
+                                    source2 = "en";
+                                }
+                            }
+                            if let Some(target) = ui.combo_target.active(){
+                                if target == 0 {
+                                    target2 = "zh";
+                                } else {
+                                    target2 = "en";
+                                }
+                            }
+
+                            //if ui.source == 0 {
+                            //    source = "zh";
+                            //}else{
+                            //    source = "en";
+                            //}
+                            //if ui.target == 0{
+                            //    target = "zh";
+                            //}else {
+                            //    target = "en";
+                            //}
+
+                            let word = translate::translate(source2,target2,word.to_string());
+                            ui.label.set_text(word.as_str());
                         }
                     });
 
