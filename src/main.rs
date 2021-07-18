@@ -67,11 +67,13 @@ fn build_ui(application: &gtk::Application) {
     let combo = gtk::ComboBoxText::new();
     combo.append_text("zh");
     combo.append_text("en");
+    combo.append_text("fr");
     combo.append_text("km");
     combo.set_active(Some(1));
     let combo2 = gtk::ComboBoxText::new();
     combo2.append_text("zh");
     combo2.append_text("en");
+    combo2.append_text("fr");
     combo2.append_text("km");
     combo2.set_active(Some(0));
     //println!("{:?}",combo2.active());
@@ -120,7 +122,8 @@ fn build_ui(application: &gtk::Application) {
                                 match source {
                                     0 => source2 = "zh",
                                     1 => source2 = "en",
-                                    2 => source2 = "km",
+                                    2 => source2 = "fr",
+                                    3 => source2 = "km",
                                     _ => source2 = "en",
                                 }
                             }
@@ -128,7 +131,8 @@ fn build_ui(application: &gtk::Application) {
                                 match target {
                                     0 => target2 = "zh",
                                     1 => target2 = "en",
-                                    2 => target2 = "km",
+                                    2 => target2 = "fr",
+                                    3 => target2 = "km",
                                     _ => target2 = "zh",
                                 }
  
