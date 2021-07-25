@@ -7,6 +7,7 @@ pub fn translate(source : &str, target: &str, words: String) -> String {
     let mut store_word = String::new();
     let source = String::from(source); //source language
     let target = String::from(target); //target language
+    let words = words.replace('%', " ");
     let args: Vec<String> = vec![words];
 
     // generate_url(args, source, target);
