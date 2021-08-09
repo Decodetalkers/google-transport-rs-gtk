@@ -16,6 +16,8 @@ thread_local!(
     static GLOBAL: RefCell<Option<Ui>> = RefCell::new(None)
 );
 fn main() {
+    //导入resource
+    gio::resources_register_include!("compiled.gresource").unwrap();
     let application = gtk::Application::new(
         Some("com.github.gtk-rs.examples.menu_bar_system"),
         Default::default(),
@@ -45,7 +47,7 @@ fn build_ui(application: &gtk::Application) {
     //window.set_resizable(false);
     window.set_position(gtk::WindowPosition::Center);
     //检查当前目录是否有这个图片，如果有，就加载，没有，就不加载
-    if let Ok(icon) = &Pixbuf::from_file("./youxie.jpeg") {
+    if let Ok(icon) = &Pixbuf::from_resource("/ygo/youxie.jpeg") {
         window.set_icon(Some(icon));
     }
     //window.set_icon(Some(&Pixbuf::from_file("./youxie.jpeg").unwrap()));
